@@ -310,6 +310,19 @@ clearpteu(pde_t *pgdir, char *uva)
   *pte &= ~PTE_U;
 }
 
+// Has PTE_P on a page. Used to determine if a page is present.
+int
+hasptep(pde_t *pgdir, char *uva)
+{
+  pte_t *pte;
+
+  pte = walkpgdir(pgdir, uva, 0);
+  if((*pte & PTE_P) == 0)
+    return 0;
+  else
+    return 1;
+}
+
 // Given a parent process's page table, create a copy
 // of it for a child.
 pde_t*
@@ -324,9 +337,9 @@ copyuvm(pde_t *pgdir, uint sz)
     return 0;
   for(i = 0; i < sz; i += PGSIZE){
     if((pte = walkpgdir(pgdir, (void *) i, 0)) == 0)
-      panic("copyuvm: pte should exist");
+      continue;
     if(!(*pte & PTE_P))
-      panic("copyuvm: page not present");
+      continue;
     pa = PTE_ADDR(*pte);
     flags = PTE_FLAGS(*pte);
     if((mem = kalloc()) == 0)
